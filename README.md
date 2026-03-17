@@ -60,6 +60,13 @@ Built as a portfolio project to demonstrate full-stack development, real-time sy
 
 4. Open `http://localhost:5173` in multiple browser tabs to test collaboration
 
+### Development URLs
+
+| Service | URL |
+|---|---|
+| Frontend | http://localhost:5173 |
+| Backend | http://localhost:3001 |
+
 ---
 
 ## 📁 Project Structure
