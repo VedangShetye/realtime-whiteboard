@@ -6,7 +6,10 @@ const socket = io('http://localhost:3001')
 function Canvas() {
   const canvasRef = useRef(null)
   const [isDrawing, setIsDrawing] = useState(false)
+  const [myColor, setMyColor] = useState('#000000')
   const lastPos = useRef(null)
+  const cursorsRef = useRef({})
+  const [cursors, setCursors] = useState({})
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -19,6 +22,10 @@ function Canvas() {
     resize()
     window.addEventListener('resize', resize)
 
+    socket.on('init', (data) => {
+      setMyColor(data.color)
+    })
+
     socket.on('draw', (data) => {
       const ctx = canvas.getContext('2d')
       ctx.beginPath()
@@ -30,9 +37,22 @@ function Canvas() {
       ctx.stroke()
     })
 
+    socket.on('cursor', (data) => {
+      cursorsRef.current[data.id] = { x: data.x, y: data.y, color: data.color }
+      setCursors({ ...cursorsRef.current })
+    })
+
+    socket.on('cursor-remove', (data) => {
+      delete cursorsRef.current[data.id]
+      setCursors({ ...cursorsRef.current })
+    })
+
     return () => {
       window.removeEventListener('resize', resize)
       socket.off('draw')
+      socket.off('cursor')
+      socket.off('cursor-remove')
+      socket.off('init')
     }
   }, [])
 
@@ -51,16 +71,19 @@ function Canvas() {
   }
 
   const draw = (e) => {
+    const pos = getPos(e)
+
+    socket.emit('cursor', { x: pos.x, y: pos.y })
+
     if (!isDrawing) return
 
     const canvas = canvasRef.current
     const ctx = canvas.getContext('2d')
-    const currentPos = getPos(e)
 
     ctx.beginPath()
     ctx.moveTo(lastPos.current.x, lastPos.current.y)
-    ctx.lineTo(currentPos.x, currentPos.y)
-    ctx.strokeStyle = '#000000'
+    ctx.lineTo(pos.x, pos.y)
+    ctx.strokeStyle = myColor
     ctx.lineWidth = 3
     ctx.lineCap = 'round'
     ctx.stroke()
@@ -68,13 +91,13 @@ function Canvas() {
     socket.emit('draw', {
       x0: lastPos.current.x,
       y0: lastPos.current.y,
-      x1: currentPos.x,
-      y1: currentPos.y,
-      color: '#000000',
+      x1: pos.x,
+      y1: pos.y,
+      color: myColor,
       lineWidth: 3
     })
 
-    lastPos.current = currentPos
+    lastPos.current = pos
   }
 
   const stopDrawing = () => {
@@ -83,14 +106,32 @@ function Canvas() {
   }
 
   return (
-    <canvas
-      ref={canvasRef}
-      onMouseDown={startDrawing}
-      onMouseMove={draw}
-      onMouseUp={stopDrawing}
-      onMouseLeave={stopDrawing}
-      style={{ display: 'block', cursor: 'crosshair' }}
-    />
+    <div style={{ position: 'relative', width: '100vw', height: '100vh' }}>
+      <canvas
+        ref={canvasRef}
+        onMouseDown={startDrawing}
+        onMouseMove={draw}
+        onMouseUp={stopDrawing}
+        onMouseLeave={stopDrawing}
+        style={{ display: 'block', cursor: 'none' }}
+      />
+      {Object.entries(cursors).map(([id, cursor]) => (
+        <div
+          key={id}
+          style={{
+            position: 'absolute',
+            left: cursor.x,
+            top: cursor.y,
+            width: 12,
+            height: 12,
+            borderRadius: '50%',
+            backgroundColor: cursor.color,
+            transform: 'translate(-50%, -50%)',
+            pointerEvents: 'none'
+          }}
+        />
+      ))}
+    </div>
   )
 }
 
