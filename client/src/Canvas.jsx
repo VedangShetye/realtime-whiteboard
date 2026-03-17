@@ -148,6 +148,21 @@ function Canvas() {
     redoStackRef.current = []
   }
 
+  const exportCanvas = () => {
+    const canvas = canvasRef.current
+    const exportCanvas = document.createElement('canvas')
+    exportCanvas.width = canvas.width
+    exportCanvas.height = canvas.height
+    const ctx = exportCanvas.getContext('2d')
+    ctx.fillStyle = '#ffffff'
+    ctx.fillRect(0, 0, exportCanvas.width, exportCanvas.height)
+    ctx.drawImage(canvas, 0, 0)
+    const link = document.createElement('a')
+    link.download = 'whiteboard.png'
+    link.href = exportCanvas.toDataURL()
+    link.click()
+  }
+
   return (
     <div style={{ position: 'relative', width: '100vw', height: '100vh' }}>
       <Toolbar
@@ -157,6 +172,7 @@ function Canvas() {
         setLineWidth={setLineWidth}
         tool={tool}
         setTool={setTool}
+        onExport={exportCanvas}
       />
       <canvas
         ref={canvasRef}

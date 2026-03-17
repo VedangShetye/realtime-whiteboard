@@ -1,4 +1,4 @@
-function Toolbar({ color, setColor, lineWidth, setLineWidth, tool, setTool }) {
+function Toolbar({ color, setColor, lineWidth, setLineWidth, tool, setTool, onExport }) {
   return (
     <div style={{
       position: 'fixed',
@@ -60,6 +60,20 @@ function Toolbar({ color, setColor, lineWidth, setLineWidth, tool, setTool }) {
       />
 
       <span style={{ color: 'white', fontSize: 13, minWidth: 20 }}>{lineWidth}px</span>
+
+      <button
+        onClick={onExport}
+        style={{
+          background: 'transparent',
+          border: '1px solid #ffffff33',
+          borderRadius: 8,
+          color: 'white',
+          padding: '6px 14px',
+          cursor: 'pointer',
+          fontSize: 18
+        }}
+        title="Export as PNG"
+      >💾</button>
 
     </div>
   )
