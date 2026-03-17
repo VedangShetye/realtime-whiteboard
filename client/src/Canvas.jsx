@@ -11,6 +11,8 @@ function Canvas() {
   const [lineWidth, setLineWidth] = useState(3)
   const [tool, setTool] = useState('pen')
   const lastPos = useRef(null)
+  const historyRef = useRef([])
+  const redoStackRef = useRef([])
   const cursorsRef = useRef({})
   const [cursors, setCursors] = useState({})
 
@@ -24,6 +26,34 @@ function Canvas() {
 
     resize()
     window.addEventListener('resize', resize)
+
+    const handleKeyDown = (e) => {
+      if (e.ctrlKey && e.key === 'z') {
+        const canvas = canvasRef.current
+        const ctx = canvas.getContext('2d')
+        redoStackRef.current.push(historyRef.current.pop())
+        if (historyRef.current.length === 0) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height)
+        } else {
+          const img = new Image()
+          img.src = historyRef.current[historyRef.current.length - 1]
+          img.onload = () => ctx.drawImage(img, 0, 0)
+        }
+      }
+      if (e.ctrlKey && e.key === 'y') {
+        const canvas = canvasRef.current
+        const ctx = canvas.getContext('2d')
+        const next = redoStackRef.current.pop()
+        if (next) {
+          historyRef.current.push(next)
+          const img = new Image()
+          img.src = next
+          img.onload = () => ctx.drawImage(img, 0, 0)
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
 
     socket.on('init', (data) => {
       setMyColor(data.color)
@@ -56,6 +86,7 @@ function Canvas() {
       socket.off('cursor')
       socket.off('cursor-remove')
       socket.off('init')
+      window.removeEventListener('keydown', handleKeyDown)
     }
   }, [])
 
@@ -106,8 +137,15 @@ function Canvas() {
   }
 
   const stopDrawing = () => {
+    if (isDrawing) saveSnapshot()
     setIsDrawing(false)
     lastPos.current = null
+  }
+
+  const saveSnapshot = () => {
+    const canvas = canvasRef.current
+    historyRef.current.push(canvas.toDataURL())
+    redoStackRef.current = []
   }
 
   return (
