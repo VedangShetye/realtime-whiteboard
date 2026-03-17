@@ -1,4 +1,7 @@
 import { useRef, useEffect, useState } from 'react'
+import { io } from 'socket.io-client'
+
+const socket = io('http://localhost:3001')
 
 function Canvas() {
   const canvasRef = useRef(null)
@@ -7,16 +10,30 @@ function Canvas() {
 
   useEffect(() => {
     const canvas = canvasRef.current
-    
+
     const resize = () => {
       canvas.width = window.innerWidth
       canvas.height = window.innerHeight
     }
-    
+
     resize()
     window.addEventListener('resize', resize)
-    
-    return () => window.removeEventListener('resize', resize)
+
+    socket.on('draw', (data) => {
+      const ctx = canvas.getContext('2d')
+      ctx.beginPath()
+      ctx.moveTo(data.x0, data.y0)
+      ctx.lineTo(data.x1, data.y1)
+      ctx.strokeStyle = data.color
+      ctx.lineWidth = data.lineWidth
+      ctx.lineCap = 'round'
+      ctx.stroke()
+    })
+
+    return () => {
+      window.removeEventListener('resize', resize)
+      socket.off('draw')
+    }
   }, [])
 
   const getPos = (e) => {
@@ -47,6 +64,15 @@ function Canvas() {
     ctx.lineWidth = 3
     ctx.lineCap = 'round'
     ctx.stroke()
+
+    socket.emit('draw', {
+      x0: lastPos.current.x,
+      y0: lastPos.current.y,
+      x1: currentPos.x,
+      y1: currentPos.y,
+      color: '#000000',
+      lineWidth: 3
+    })
 
     lastPos.current = currentPos
   }
