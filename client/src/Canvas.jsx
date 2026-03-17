@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState } from 'react'
 import { io } from 'socket.io-client'
+import Toolbar from './Toolbar'
 
 const socket = io('http://localhost:3001')
 
@@ -7,6 +8,8 @@ function Canvas() {
   const canvasRef = useRef(null)
   const [isDrawing, setIsDrawing] = useState(false)
   const [myColor, setMyColor] = useState('#000000')
+  const [lineWidth, setLineWidth] = useState(3)
+  const [tool, setTool] = useState('pen')
   const lastPos = useRef(null)
   const cursorsRef = useRef({})
   const [cursors, setCursors] = useState({})
@@ -72,7 +75,6 @@ function Canvas() {
 
   const draw = (e) => {
     const pos = getPos(e)
-
     socket.emit('cursor', { x: pos.x, y: pos.y })
 
     if (!isDrawing) return
@@ -80,11 +82,14 @@ function Canvas() {
     const canvas = canvasRef.current
     const ctx = canvas.getContext('2d')
 
+    const strokeColor = tool === 'eraser' ? '#ffffff' : myColor
+    const strokeWidth = tool === 'eraser' ? 20 : lineWidth
+
     ctx.beginPath()
     ctx.moveTo(lastPos.current.x, lastPos.current.y)
     ctx.lineTo(pos.x, pos.y)
-    ctx.strokeStyle = myColor
-    ctx.lineWidth = 3
+    ctx.strokeStyle = strokeColor
+    ctx.lineWidth = strokeWidth
     ctx.lineCap = 'round'
     ctx.stroke()
 
@@ -93,8 +98,8 @@ function Canvas() {
       y0: lastPos.current.y,
       x1: pos.x,
       y1: pos.y,
-      color: myColor,
-      lineWidth: 3
+      color: strokeColor,
+      lineWidth: strokeWidth
     })
 
     lastPos.current = pos
@@ -107,13 +112,21 @@ function Canvas() {
 
   return (
     <div style={{ position: 'relative', width: '100vw', height: '100vh' }}>
+      <Toolbar
+        color={myColor}
+        setColor={setMyColor}
+        lineWidth={lineWidth}
+        setLineWidth={setLineWidth}
+        tool={tool}
+        setTool={setTool}
+      />
       <canvas
         ref={canvasRef}
         onMouseDown={startDrawing}
         onMouseMove={draw}
         onMouseUp={stopDrawing}
         onMouseLeave={stopDrawing}
-        style={{ display: 'block', cursor: 'none' }}
+        style={{ display: 'block', cursor: 'crosshair' }}
       />
       {Object.entries(cursors).map(([id, cursor]) => (
         <div
