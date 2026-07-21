@@ -69,6 +69,25 @@ Built as a portfolio project to demonstrate full-stack development, real-time sy
 
 ---
 
+## 🛑 Stopping the Servers
+
+When you're done working, stop both servers to free up the ports:
+
+- In each terminal window running the backend or frontend, press `Ctrl+C` to stop the process.
+- If a server is still running in the background (e.g. you closed the terminal without stopping it first), you can free the ports manually:
+
+```bash
+# Find and kill whatever is using the backend port (3001)
+lsof -ti:3001 | xargs kill -9
+
+# Find and kill whatever is using the frontend port (5173)
+lsof -ti:5173 | xargs kill -9
+```
+
+> On Windows, use `netstat -ano | findstr :3001` to find the PID, then `taskkill /PID <pid> /F` to stop it.
+
+---
+
 ## 📁 Project Structure
 ```
 realtime-whiteboard/
